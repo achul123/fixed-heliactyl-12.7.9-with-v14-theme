@@ -1,0 +1,158 @@
+<head>
+  <title><%= settings.name %></title>
+  <link rel="icon" type="image/x-icon" href="../assets/favicon.png">
+  <link rel="stylesheet" href="../assets/tailwind.css">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script src="https://unpkg.com/@popperjs/core@2.10.1/dist/umd/popper.min.js"></script>
+
+  <!-- Inter font -->
+  <link rel="preconnect" href="https://fonts.gstatic.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+
+<body class="bg-gray-100" style="font-family: 'Inter', sans-serif;">
+  <%- include('../components/navigation') %>
+  <div class="md:pl-48 flex flex-col flex-1 h-screen">
+    <main class="flex-1 pb-32">
+      <div class="py-6">
+        <% /* Skeleton loader, lasts about 0.3s to let the page content load */ %>
+        <%- include('../components/skeleton') %>
+        <div class="hidden max-w-7xl pt-8 mx-auto px-4 sm:px-6 md:px-8" id="content">
+          <div class="lg:flex lg:items-center lg:justify-between rounded-3xl mb-8">
+            <div class="min-w-0 flex-1">
+              <div class="flex">
+                <div class="relative">
+                  <div class="bg-gray-200 rounded-2xl h-11 w-11 text-center flex text-gray-400">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5 mt-3 ml-3">
+                      <path d="M9.375 3a1.875 1.875 0 0 0 0 3.75h1.875v4.5H3.375A1.875 1.875 0 0 1 1.5 9.375v-.75c0-1.036.84-1.875 1.875-1.875h3.193A3.375 3.375 0 0 1 12 2.753a3.375 3.375 0 0 1 5.432 3.997h3.943c1.035 0 1.875.84 1.875 1.875v.75c0 1.036-.84 1.875-1.875 1.875H12.75v-4.5h1.875a1.875 1.875 0 1 0-1.875-1.875V6.75h-1.5V4.875C11.25 3.839 10.41 3 9.375 3ZM11.25 12.75H3v6.75a2.25 2.25 0 0 0 2.25 2.25h6v-9ZM12.75 12.75v9h6.75a2.25 2.25 0 0 0 2.25-2.25v-6.75h-9Z" />
+                    </svg>
+                  </div>
+                </div>
+                <div class="relative ml-4">
+                  <h2 class="text-xl font-semibold text-gray-700 sm:truncate tracking-tight">AFK Page</h2>
+                  <p class="text-xs font-thin text-gray-500">You'll automatically get coins for leaving this page open.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="bg-white rounded-3xl p-8 mt-5">
+            <div class="text-center">
+              <p class="text-gray-600 mb-4">
+                Every <%= settings.api["afk page"].every !== 1 ? settings.api["afk page"].every + " seconds" : "second" %>, 
+                you will get <%= settings.api["afk page"].coins %> <%= settings.api["afk page"].coins === 1 ? "coin" : "coins" %>
+              </p>
+              <div class="mt-4 flex items-center justify-center gap-2">
+                <span class="text-gray-600">This earning session you have earned</span>
+                <code id="sessionEarn" class="bg-gray-100 px-3 py-1 rounded-xl text-gray-600">0 coins</code>
+              </div>
+              <div class="mt-4 flex items-center justify-center gap-2">
+                <span class="text-gray-600">Session duration:</span>
+                <code id="timer" class="bg-gray-100 px-3 py-1 rounded-xl text-gray-600">00:00:00</code>
+              </div>
+              <div class="mt-4 flex items-center justify-center gap-2">
+                <span class="text-gray-600">Next reward in:</span>
+                <code id="countdown" class="bg-gray-100 px-3 py-1 rounded-xl text-gray-600" data-interval="<%= settings.api["afk page"].every %>"><%= settings.api["afk page"].every %></code>
+                <span class="text-gray-600">seconds</span>
+              </div>
+            </div>
+          </div>
+
+          <script>
+            // Timer functionality
+            function startTimer() {
+              const startTime = Date.now();
+              
+              function updateTimer() {
+                const elapsedTime = Date.now() - startTime;
+                const hours = Math.floor(elapsedTime / (1000 * 60 * 60));
+                const minutes = Math.floor((elapsedTime % (1000 * 60 * 60)) / (1000 * 60));
+                const seconds = Math.floor((elapsedTime % (1000 * 60)) / 1000);
+                
+                const formattedTime = 
+                  String(hours).padStart(2, '0') + ':' +
+                  String(minutes).padStart(2, '0') + ':' +
+                  String(seconds).padStart(2, '0');
+                
+                document.getElementById('timer').textContent = formattedTime;
+              }
+
+              // Update every second
+              updateTimer();
+              setInterval(updateTimer, 1000);
+            }
+
+            // Countdown functionality
+            function startCountdown(duration) {
+              let timeLeft = duration;
+              
+              function updateCountdown() {
+                document.getElementById('countdown').textContent = timeLeft;
+                if (timeLeft > 0) {
+                  timeLeft--;
+                }
+              }
+
+              // Clear any existing countdown
+              if (window.countdownInterval) {
+                clearInterval(window.countdownInterval);
+              }
+
+              // Update immediately and then every second
+              updateCountdown();
+              window.countdownInterval = setInterval(updateCountdown, 1000);
+            }
+
+            // Start both timers when the page loads
+            startTimer();
+            startCountdown(parseInt(document.getElementById('countdown').getAttribute('data-interval')));
+            // Variables for tracking coins and connection status
+            let totalCoins = 0;
+            let reconnecting = false;
+            let sessionStartTime = Date.now();
+
+            function connect() {
+              const socket = new WebSocket(`${window.location.href.startsWith("https://") ? "wss" : "ws"}://${window.location.href.replace("http://","").replace("https://","").split("/")[0]}/afk/ws`);
+
+              socket.onopen = () => {
+                console.log("WebSocket connection opened");
+                if (reconnecting) {
+                  document.getElementById("sessionEarn").innerText = `${totalCoins} coins`;
+                  reconnecting = false;
+                }
+              };
+
+              socket.onmessage = (event) => {
+                let data = JSON.parse(event.data);
+                if (data.type === "coin") {
+                  totalCoins += 1;
+                  document.getElementById("sessionEarn").innerText = `${totalCoins} coins`;
+                  // Reset countdown when receiving coins
+                  startCountdown(parseInt(document.getElementById('countdown').getAttribute('data-interval')));
+                }
+              };
+
+              socket.onclose = (event) => {
+                console.log("WebSocket connection closed:", event.reason);
+                if (!reconnecting) {
+                  reconnect();
+                }
+              };
+
+              function reconnect() {
+                reconnecting = true;
+                document.getElementById("sessionEarn").innerText = `Reconnecting...`;
+                setTimeout(() => {
+                  connect();
+                }, 750);
+              }
+            }
+
+            connect();
+          </script>
+        </div>
+      </div>
+    </main>
+    <%- include('../components/footer') %>
+  </div>
+  </div>
+</body>
