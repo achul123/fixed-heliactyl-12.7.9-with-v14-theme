@@ -104,7 +104,7 @@
         <% } %> ">
           <% if (settings.api.client.accountSwitcher !== true) { %>
           <% /* Legacy account view, will only be seen if the account switcher is disabled */ %>
-          <a href="#" class="flex-shrink-0 w-full group block">
+          <a href="/logout" class="flex-shrink-0 w-full group block">
             <div class="flex items-center">
               <div>
                 <img class="inline-block h-9 w-9 rounded-xl" src="https://cdn.discordapp.com/avatars/<%= userinfo.id %>/<%= userinfo.avatar %>?size=256" alt="">
