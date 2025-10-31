@@ -4,3 +4,4 @@ database.sqlite
 settings.json
 package-lock.json
 commit
+pnpm-lock.yaml
