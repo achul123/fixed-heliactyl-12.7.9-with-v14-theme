@@ -28,7 +28,7 @@ module.exports.load = async function(app, db) {
     if (newsettings.api.client.allow.regen !== true) return res.send("You cannot regenerate your password currently.");
 
     let newpassword = makeid(newsettings.api.client.passwordgenerator["length"]);
-    req.session.password = newpassword;
+    req.session.passworduser = newpassword;
 
     await fetch(
       settings.pterodactyl.domain + "/api/application/users/" + req.session.pterodactyl.id,
@@ -47,7 +47,7 @@ module.exports.load = async function(app, db) {
         })
       }
     );
-    res.redirect("/settings")
+    res.redirect("/security");
   });
 };
 
