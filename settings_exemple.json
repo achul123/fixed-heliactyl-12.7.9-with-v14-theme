@@ -1,9 +1,9 @@
 {
-  "version": "12.7.8",
+  "version": "12.7.9",
   "name": "Heliactyl",
   "letter": "H",
   "icon": "https://cdn.discordapp.com/attachments/1063585626022223892/1065305275826966609/Screenshot_2023-01-18_162220.jpg",
-  "theme": "default",
+  "theme": "v14",
   "timezone": "Europe/Paris",
   "resources": {
     "_comment": "Options: MB, GB. This is only used on the user side, admin will use GB.",
